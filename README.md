@@ -1,6 +1,6 @@
 ### Still unfinished!!
 
-#Kah
+# Kah
 Kah is template filler. You create your templates in [nunjucks](https://mozilla.github.io/nunjucks/)  and kah will parse out each section so it can easily be filled out by someone without html knowledge. It uses a [medium style editor](https://github.com/FranzSkuffka/vue-medium-editor) to make it easier to format the text.
 
 ## Why?
