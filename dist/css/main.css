@@ -1,0 +1,16 @@
+/*.form-control>p {
+  display: inline-block;
+  width: 100%;
+  min-height: 25px;
+  padding: 5px 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+}
+.form-control>p:focus {
+  border-color: #6db3fd;
+  box-shadow: 3px 3px 0 #6db3fd, -3px -3px 0 #6db3fd, -3px 3px 0 #6db3fd, 3px -3px 0 #6db3fd;
+}*/

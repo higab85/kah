@@ -1,0 +1,31 @@
+{
+  "name": "Kah",
+  "version": "1.0.0",
+  "description": "A simple template app for Proton",
+  "main": "app.js",
+  "author": "higab85",
+  "scripts": {
+    "start": "electron ."
+  },
+  "browser": {
+    "vue": "static/vue.js"
+  },
+  "dependencies": {
+    "electron": "^1.6.7",
+    "gulp": "^3.9.1",
+    "gulp-nunjucks": "^3.0.0",
+    "nunjucks": "^3.0.0",
+    "robotjs": "^0.4.7",
+    "vue": "^2.3.3",
+    "vue2-medium-editor": "^1.0.4"
+  },
+  "devDependencies": {
+    "electron-prebuilt": "^1.4.13",
+    "jQuery": "^1.7.4",
+    "jquery": "^3.2.1",
+    "jsdom": "^10.1.0",
+    "keyboard-js": "^1.1.4",
+    "keysim": "^2.0.0",
+    "medium-editor": "^5.23.0"
+  }
+}

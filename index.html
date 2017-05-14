@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kah</title>
+
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="dist/css/photon.css">
+    <link rel="stylesheet" href="dist/css/main.css">
+    <!-- Font Awesome for awesome icons. You can redefine icons used in a plugin configuration -->
+    <link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+    <link rel="stylesheet" href="dist/css/medium-editor.min.css">
+  </head>
+
+
+  <body id="body">
+  <!-- Wrap your entire app inside .window -->
+    <div class="window">
+      <!-- .toolbar-header sits at the top of your app -->
+      <header id="header" class="toolbar toolbar-header">
+        <h1 class="title">Kah</h1>
+
+        <!-- TODO
+            actions needed:
+            - push
+            - pull
+            - view
+              - full preview
+              - full editor
+              - half half (default)
+       -->
+
+        <div class="toolbar-actions">
+          <div class="btn-group">
+            <!-- TODO: pull newest version from git -->
+            <button class="btn btn-default">
+              <span class="icon icon-arrows-ccw"></span>
+            </button>
+            <button v-on:click="save" class="btn btn-default">
+              <span class="icon icon-floppy"></span>
+            </button>
+
+            <!-- LATER TODO: EXTRACT HTML FILE. spent way too long trying to get this to work... -->
+            <button v-on:click="export_file" class="btn btn-default">
+              <span class="icon icon-export"></span>
+            </button>
+            <!-- TODO: Open settings -->
+            <button class="btn btn-default">
+              <span class="icon icon-cog"></span>
+            </button>
+          </div>
+
+          <!-- TODO: DEPLOY TO GITHUB BUTTON
+                This needs:
+                  - read user and pass from conf
+                  - prompt to get commit message
+        -->
+          <button class="btn btn-default pull-right">
+            <span class="icon icon-rocket"></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="window-content">
+        <!-- TODO:
+            LATER: Maybe implement more projects as tabs?
+       -->
+        <div class="pane-sm sidebar">
+          <nav id="pages" class="nav-group">
+            <li v-for="page in pages" v-on:click="selectFile(page)" class="nav-group-item">
+              {{ page.name }}
+            </li>
+          </nav>
+        </div>
+
+        <div id="editable" class="pane padded form-group" >
+          <form>
+            <div  v-for="(block, index) in blocks">
+              <label> {{ block.title }}</label>
+              <div class="form-control">
+                <medium-editor :text='block.content'  :reuse-medium-editor-instance="false" v-on:edit="applyTextEdit($event, index)"></medium-editor>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div id="preview" class="pane">
+          <!-- TODO: make editable too -->
+          <webview src="/home/tyler/Documents/work/drugsandme/v2-test/build/me.html" style="min-height: 100%;" >
+          </webview>
+        </div>
+      </div>
+    </div>
+
+  </body>
+
+  <script type="text/javascript" src="dist/main.js" charset="utf-8"></script>
+  <!-- <script type="text/javascript" src="app.js" charset="utf-8"></script> -->
+
+</html>
