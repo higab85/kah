@@ -54,7 +54,7 @@ let template = [{
       label: 'Save (not working)',
       accelerator:'CmdOrCtrl+S',
       click: () => {
-        console.log("yep")
+        // console.log("saved changes")
         // editable.saveChanges()
       }
     }

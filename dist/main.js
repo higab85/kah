@@ -7,7 +7,7 @@ const nunjucks = require('nunjucks')
 const gulp = require('gulp')
 const path = require('path')
 const g_nunjucks = require('gulp-nunjucks')
-const electro = require('electron')
+const electron  = require('electron').remote
 
 // TODO:: FIX THIS SHIT
 // var appjs = require(path.join(__dirname, "app.js")).template
@@ -178,7 +178,7 @@ var header = new Vue ({
     },
     // TODO: exports file user is currently working on
     export_file: () => {
-      electro.dialog.showSaveDialog({ filters: [
+      electron.dialog.showSaveDialog({ filters: [
         { name: 'html', extensions: ['html'] }
       ]}, (fileName) => {
         if (fileName === undefined)
