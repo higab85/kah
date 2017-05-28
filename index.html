@@ -10,6 +10,13 @@
     <!-- Font Awesome for awesome icons. You can redefine icons used in a plugin configuration -->
     <link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
     <link rel="stylesheet" href="dist/css/medium-editor.min.css">
+
+    <!-- VEX -->
+    <script src="node_modules/vex-js/dist/js/vex.combined.min.js"></script>
+    <script>vex.defaultOptions.className = 'vex-theme-os'</script>
+    <link rel="stylesheet" href="node_modules/vex-js/dist/css/vex.css" />
+    <link rel="stylesheet" href="node_modules/vex-js/dist/css/vex-theme-os.css" />
+
   </head>
 
 
@@ -32,33 +39,36 @@
 
         <div class="toolbar-actions">
           <div class="btn-group">
-            <!-- TODO: pull newest version from git -->
-            <button class="btn btn-default">
+            <!-- Pull function -->
+            <!-- <button v-on:click="pull" class="btn btn-default">
               <span class="icon icon-arrows-ccw"></span>
+            </button> -->
+            <!-- TODO: This will make a new file from whichever file the
+            template is  -->
+            <button title="new file" v-on:click="new_file" class="btn btn-default">
+              <span class="icon icon-plus"></span>
             </button>
-            <button v-on:click="save" class="btn btn-default">
+            <button title="save file" v-on:click="save_file" class="btn btn-default">
               <span class="icon icon-floppy"></span>
             </button>
-
-            <!-- LATER TODO: EXTRACT HTML FILE. spent way too long trying to get this to work... -->
-            <button v-on:click="export_file" class="btn btn-default">
+            <button title="export file" v-on:click="export_file" class="btn btn-default">
               <span class="icon icon-export"></span>
             </button>
             <!-- TODO: Open settings -->
-            <button class="btn btn-default">
+            <button title="settings" class="btn btn-default">
               <span class="icon icon-cog"></span>
             </button>
           </div>
 
-          <!-- TODO: DEPLOY TO GITHUB BUTTON
-                This needs:
-                  - read user and pass from conf
-                  - prompt to get commit message
+          <!--
+              I have given up on this feature as I can't find a user friendly
+              way to get the server to authenticate the user. Solutions
+              included SSH keys or typing password into terminal
         -->
-          <button class="btn btn-default pull-right">
+          <!-- <button v-on:click="push" class="btn btn-default pull-right">
             <span class="icon icon-rocket"></span>
           </button>
-        </div>
+        </div> -->
       </header>
 
       <div class="window-content">
@@ -76,7 +86,7 @@
         <div id="editable" class="pane padded form-group" >
           <form>
             <div  v-for="(block, index) in blocks">
-              <label> {{ block.title }}</label>
+              <h3> {{ block.title }}</h3>
               <div class="form-control">
                 <medium-editor :text='block.content'  :reuse-medium-editor-instance="false" v-on:edit="applyTextEdit($event, index)"></medium-editor>
               </div>
@@ -94,6 +104,5 @@
   </body>
 
   <script type="text/javascript" src="dist/main.js" charset="utf-8"></script>
-  <!-- <script type="text/javascript" src="app.js" charset="utf-8"></script> -->
 
 </html>

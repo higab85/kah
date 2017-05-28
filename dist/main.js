@@ -8,15 +8,27 @@ const gulp = require('gulp')
 const path = require('path')
 const g_nunjucks = require('gulp-nunjucks')
 const electron  = require('electron').remote
+const vex = require('vex-js')
+const $ = require('jquery')
 
-// TODO:: FIX THIS SHIT
-// var appjs = require(path.join(__dirname, "app.js")).template
+// TODO: If no local project, you will be welcomed and asked for a git repo url
+// This will be cloned.
+// TODO: Get pull working
+// TODO: If changes made, asked to save when changing files
+
+vex.registerPlugin(require('vex-dialog'))
+vex.defaultOptions.className = 'vex-theme-os'
+
 
 // TODO: read from config file (config file also needs path to static folder)
 var projectDir = '/home/tyler/Documents/work/drugsandme/v2-test/'
 var pagesDir = projectDir + "src/"
 var buildDir = projectDir + "build/"
 var program_files = "/home/tyler/Downloads/kah/"
+var branch = 'master'
+var email = 'test@test.com'
+const simpleGit = require('simple-git')(projectDir)
+
 
 var preview = new Vue ({
   el: "#preview",
@@ -87,10 +99,11 @@ var parseFile = (file) =>{
 var remakeFile = (blocks) =>{
   var output = ""
   output+= editable.parentTemplate+"\n"
-  for(block in blocks){
+  var block = 0
+  for(block in blocks)
     output+="{% block " + blocks[block].title + " %}\n" + blocks[block].content + "\n{% endblock %}\n"
-  }
-  return output
+
+return output
 }
 
 
@@ -173,10 +186,12 @@ var editable = new Vue({
 var header = new Vue ({
   el: "#header",
   methods: {
-    save: function() {
+    // saves file by overwriting the original
+    save_file: function() {
       editable.saveChanges()
     },
-    // TODO: exports file user is currently working on
+    // Exports file to wanted directory, so html file can then be sent on
+    // to dev
     export_file: () => {
       electron.dialog.showSaveDialog({ filters: [
         { name: 'html', extensions: ['html'] }
@@ -190,6 +205,50 @@ var header = new Vue ({
          })
        }
      )}
+
+
+
+    // pull dir from repo
+    // pull: () => {
+    //   simpleGit
+    //     .exec(function() {
+    //         console.log('Starting pull...');
+    //     })
+    //     .pull(function(err, update) {
+    //       if(update && update.summary.changes) {
+    //         console.log('all done.')
+    //       }
+    //     })
+    //     .then(function() {
+    //       console.log('pull done.');
+    //     });
+    //
+    // },
+    // GIVEN UP ON THIS FEATURE. EXPLAINED WHY ON INDEX.HTML
+    // push changes to repo
+    // push: () => {
+    //   vex.dialog.open({
+    //     message: 'Enter your username and password:',
+    //     input: [
+    //         '<input name="username" type="text" placeholder="Username" required />',
+    //         '<input name="password" type="password" placeholder="Password" required />'
+    //     ].join(''),
+    //     buttons: [
+    //         $.extend({}, vex.dialog.buttons.YES, { text: 'Login' }),
+    //         $.extend({}, vex.dialog.buttons.NO, { text: 'Back' })
+    //     ],
+    //     callback: function (data) {
+    //         if (!data) {
+    //             console.log('Cancelled')
+    //         } else {
+    //             simpleGit
+    //               .add('./*')
+    //               .commit("edited content on " + editable.page)
+    //               .push('origin', branch)
+    //         }
+    //     }
+    //   })
+    // }
 
   }
 })
@@ -223,10 +282,10 @@ fs.readdir(pagesDir, function done(err, list){
   if(err){
     return console.log(err);
   }
-
-  for(var item in list){
-    if(!(rejectedFiles.includes(list[item])))
-      pagesInFolder.pages.push({name: list[item]})
+  var onlyHTML = list.filter( (file) => file.match(/.html/) )
+  for(var item in onlyHTML ){
+    if(!(rejectedFiles.includes(onlyHTML[item])))
+      pagesInFolder.pages.push({name: onlyHTML[item]})
     }
 });
 

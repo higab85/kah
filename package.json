@@ -26,6 +26,9 @@
     "jsdom": "^10.1.0",
     "keyboard-js": "^1.1.4",
     "keysim": "^2.0.0",
-    "medium-editor": "^5.23.0"
+    "medium-editor": "^5.23.0",
+    "simple-git": "^1.73.0",
+    "vex-js": "^3.1.1",
+    "xel": "0.0.24"
   }
 }
