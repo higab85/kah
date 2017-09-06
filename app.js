@@ -6,6 +6,7 @@ const gulp = require('gulp')
 const paths = require('path')
 const g_nunjucks = require('gulp-nunjucks')
 
+//TODO: double save shouldn't crash program
 
 ////////////////////
 // Top Menu
@@ -58,7 +59,7 @@ let template = [{
     // will Take the file in program directory and do the same as save in main.js
     //
      {
-      label: 'Save (not workeng)',
+      label: 'Save',
       accelerator:'CmdOrCtrl+S',
       click: () => {
         console.log("Saving...")
