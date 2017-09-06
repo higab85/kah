@@ -2,7 +2,9 @@
 const electron = require('electron')
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const fis = require('fs')
+const gulp = require('gulp')
 const paths = require('path')
+const g_nunjucks = require('gulp-nunjucks')
 
 
 ////////////////////
@@ -33,29 +35,71 @@ let template = [{
       label: 'Paste',
       accelerator: 'CmdOrCtrl+V',
       role: 'paste'
-    }, {
-      // used http://mylifeforthecode.com/getting-started-with-standard-dialogs-in-electron/
-      label: 'export',
-      accelerator: 'CmdOrCtrl+E',
-      click: () => {
-        dialog.showSaveDialog({ filters: [
-          { name: 'html', extensions: ['html'] }
-        ]}, (fileName) => {
-          if (fileName === undefined)
-            return
+    },
+    //  {
+    //   // used http://mylifeforthecode.com/getting-started-with-standard-dialogs-in-electron/
+    //   label: 'export',
+    //   accelerator: 'CmdOrCtrl+E',
+    //   click: () => {
+    //     dialog.showSaveDialog({ filters: [
+    //       { name: 'html', extensions: ['html'] }
+    //     ]}, (fileName) => {
+    //       if (fileName === undefined)
+    //         return
+    //
+    //        fis.readdir('.tmp', (err, files) => {
+    //          for(var file in files)
+    //            fis.createReadStream(paths.join('.tmp', files[file])).pipe(fis.createWriteStream(fileName));
+    //        })
+    //      }
+    //   )}
+    // },
 
-           fis.readdir('.tmp', (err, files) => {
-             for(var file in files)
-               fis.createReadStream(paths.join('.tmp', files[file])).pipe(fis.createWriteStream(fileName));
-           })
-         }
-      )}
-    }, {
-      label: 'Save (not working)',
+    // will Take the file in program directory and do the same as save in main.js
+    //
+     {
+      label: 'Save (not workeng)',
       accelerator:'CmdOrCtrl+S',
       click: () => {
-        // console.log("saved changes")
-        // editable.saveChanges()
+        console.log("Saving...")
+        // tempFiles is the folder in which each change is saved
+        //(program files /tmp)
+        var tempDir = app.getAppPath() + "/.tmp"
+        // tempFile is the name of the file in .tmp
+        var tempFileName = fis.readdirSync(tempDir)[0]
+        var tempFile = paths.join(tempDir,tempFileName)
+        var projectDir = "/home/tyler/Documents/work/drugsandme/v2-test"
+        var buildDir = paths.join(projectDir, "/build")
+        var srcDir = paths.join(projectDir, "/src")
+
+        console.log(tempFile, tempFileName)
+
+        // copy file from .tmp to src
+        // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
+        // fis.createReadStream(path.join(buildDir,editable.page)).pipe(fis.createWriteStream(path.join(program_files, ".tmp", editable.page)));
+        console.log("copying ",tempFile, " to ", srcDir,tempFileName)
+        fis.createReadStream(tempFile).pipe(fis.createWriteStream(paths.join(srcDir,tempFileName)))
+        // render template and save to buildir
+        // http://samwize.com/2013/09/01/how-you-can-pass-a-variable-into-callback-function-in-node-dot-js/
+        console.log("compiling: ", srcDir, tempFileName);
+        gulp.src(paths.join(srcDir,tempFileName))
+        .pipe(g_nunjucks.compile())
+        .pipe(gulp.dest("/home/tyler/Documents/work/drugsandme/v2-test/build"))
+
+        // delete all tmp files
+        fis.readdir(tempDir, (err, files) => {
+          for (var file in files){
+            fis.unlink(paths.join(tempDir, files[file]), (err) => {
+              if (err) throw err;
+              console.log('successfully deleted:' + files[file]);
+            });
+          }
+        })
+
+        // // copy file to .tmp so it can be used by other .js files
+        // // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
+        // fs.createReadStream(path.join(buildDir,editable.page)).pipe(fs.createWriteStream(path.join(program_files, ".tmp", editable.page)));
+        console.log("saved changes")
       }
     }
   ]

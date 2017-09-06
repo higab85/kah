@@ -13,8 +13,7 @@ const $ = require('jquery')
 
 // TODO: If no local project, you will be welcomed and asked for a git repo url
 // This will be cloned.
-// TODO: Get pull working
-// TODO: If changes made, asked to save when changing files
+// TODO: (safety mechanism) If changes made, asked to save when changing files
 
 vex.registerPlugin(require('vex-dialog'))
 vex.defaultOptions.className = 'vex-theme-os'
@@ -25,9 +24,8 @@ var projectDir = '/home/tyler/Documents/work/drugsandme/v2-test/'
 var pagesDir = projectDir + "src/"
 var buildDir = projectDir + "build/"
 var program_files = "/home/tyler/Downloads/kah/"
-var branch = 'master'
-var email = 'test@test.com'
-const simpleGit = require('simple-git')(projectDir)
+// var branch = 'master'
+// const simpleGit = require('simple-git')(projectDir)
 
 
 var preview = new Vue ({
@@ -66,7 +64,7 @@ var parseFile = (file) =>{
     if(readingContent){
       // end of block reached, so chop it off, add to array, and start from scatch
       if(line === "{% endblock %}"){
-        console.log(title)
+        // console.log(title)
         contentArray.push({title:title, content:text})
         title = ""
         text = ""
@@ -135,13 +133,34 @@ var editable = new Vue({
       editable.filepath = pagesDir+page
       console.log("editing: " + editable.filepath)
       editable.blocks = parseFile(editable.filepath)
+      return;
 
   },
+  // applies edits done to text to the block variable (not to file)
     applyTextEdit: function (text, index) {
       console.log('index: ' + index)
-      editable.blocks[index].content = text
+      // if (editable.blocks[index] == false)
+      //   console.log('no changes!')
+      // else
+      if (editable.blocks[index].content === text)
+        console.log("no changes!");
+      else{
+        editable.blocks[index].content = text
+
+        // So that it can also be saved with CmdOrCtrl+S
+        var newContent = remakeFile(editable.blocks)
+
+        fs.writeFile( electron.app.getAppPath() +"/.tmp/" + editable.page, newContent, (err) => {
+          if (err) {
+              alert("An error ocurred updating the file" + err.message);
+              console.log(err);
+              return;
+          }
+        });
+      }
   },
-  // recompiles template on save, and reload
+
+  // Saves changes done to blocks, recompiles template on save, and reload
     saveChanges: () => {
 
       var newContent = remakeFile(editable.blocks)
@@ -153,7 +172,6 @@ var editable = new Vue({
         }
       });
 
-
       // render template and save to buildir
       console.log("dest: " + buildDir+editable.page)
       // http://samwize.com/2013/09/01/how-you-can-pass-a-variable-into-callback-function-in-node-dot-js/
@@ -164,19 +182,19 @@ var editable = new Vue({
       .pipe(g_nunjucks.compile())
   		.pipe(gulp.dest(buildDir))
 
-      // delete previous tmp file
-      fs.readdir('.tmp', (err, files) => {
-        for (file in files){
-          fs.unlink(path.join('.tmp', files[file]), (err) => {
-            if (err) throw err;
-            console.log('successfully deleted.');
-          });
-        }
-      })
-
-      // copy file to .tmp so it can be used by other .js files
-      // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
-      fs.createReadStream(path.join(buildDir,editable.page)).pipe(fs.createWriteStream(path.join(program_files, ".tmp", editable.page)));
+      // // delete previous tmp file
+      // fs.readdir('.tmp', (err, files) => {
+      //   for (file in files){
+      //     fs.unlink(path.join('.tmp', files[file]), (err) => {
+      //       if (err) throw err;
+      //       console.log('successfully deleted.');
+      //     });
+      //   }
+      // })
+      //
+      // // copy file to .tmp so it can be used by other .js files
+      // // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
+      // fs.createReadStream(path.join(buildDir,editable.page)).pipe(fs.createWriteStream(path.join(program_files, ".tmp", editable.page)));
     }
 
   }
