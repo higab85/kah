@@ -6,8 +6,6 @@ const gulp = require('gulp')
 const paths = require('path')
 const g_nunjucks = require('gulp-nunjucks')
 
-//TODO: double save shouldn't crash program
-
 ////////////////////
 // Top Menu
 ///////////////////
@@ -68,6 +66,10 @@ let template = [{
         var tempDir = app.getAppPath() + "/.tmp"
         // tempFile is the name of the file in .tmp
         var tempFileName = fis.readdirSync(tempDir)[0]
+        // Avoids double save crash. It would crash if file was saved when there
+        // was no file in .tmp . Also fixes issue of lingering files in .tmp
+        if (!tempFileName)
+          return
         var tempFile = paths.join(tempDir,tempFileName)
         var projectDir = "/home/tyler/Documents/work/drugsandme/v2-test"
         var buildDir = paths.join(projectDir, "/build")
