@@ -5,6 +5,7 @@ const fis = require('fs')
 const gulp = require('gulp')
 const paths = require('path')
 const g_nunjucks = require('gulp-nunjucks')
+const AdmZip = require('adm-zip');
 
 ////////////////////
 // Top Menu
@@ -35,24 +36,38 @@ let template = [{
       accelerator: 'CmdOrCtrl+V',
       role: 'paste'
     },
-    //  {
-    //   // used http://mylifeforthecode.com/getting-started-with-standard-dialogs-in-electron/
-    //   label: 'export',
-    //   accelerator: 'CmdOrCtrl+E',
-    //   click: () => {
-    //     dialog.showSaveDialog({ filters: [
-    //       { name: 'html', extensions: ['html'] }
-    //     ]}, (fileName) => {
-    //       if (fileName === undefined)
-    //         return
-    //
-    //        fis.readdir('.tmp', (err, files) => {
-    //          for(var file in files)
-    //            fis.createReadStream(paths.join('.tmp', files[file])).pipe(fis.createWriteStream(fileName));
-    //        })
-    //      }
-    //   )}
-    // },
+     {
+      // used http://mylifeforthecode.com/getting-started-with-standard-dialogs-in-electron/
+      // This would ideally export a zip file with the source, and html file
+      label: 'export',
+      accelerator: 'CmdOrCtrl+E',
+      click: () => {
+        dialog.showSaveDialog({ filters: [
+          { name: 'zip', extensions: ['zip'] }
+        ]}, (fileName) => {
+          if (fileName === undefined)
+            return
+
+          // create zip file
+          var zip = new AdmZip()
+          var projectDir = "/home/tyler/Documents/work/drugsandme/v2-test"
+          var buildDir = paths.join(projectDir, "/build")
+          var srcDir = paths.join(projectDir, "/src")
+          // tempFile is the name of the file in .tmp
+          var currentFile = fis.readdirSync(app.getAppPath() + "/.current")[0]
+          zip.addLocalFile(paths.join(buildDir, currentFile))
+          zip.addLocalFile(paths.join(srcDir, currentFile))
+          
+          // Write zip file
+          zip.writeZip(fileName)
+
+          // fis.readdir('.tmp', (err, files) => {
+          //   for(var file in files)
+          //     fis.createReadStream(paths.join('.tmp', files[file])).pipe(fis.createWriteStream(fileName));
+          //  })
+         }
+      )}
+    },
 
     // will Take the file in program directory and do the same as save in main.js
     //
@@ -68,19 +83,19 @@ let template = [{
         var tempFileName = fis.readdirSync(tempDir)[0]
         // Avoids double save crash. It would crash if file was saved when there
         // was no file in .tmp . Also fixes issue of lingering files in .tmp
-        if (!tempFileName)
+        if (!tempFileName){
+          console.log("No changes made!!");
           return
+        }
         var tempFile = paths.join(tempDir,tempFileName)
         var projectDir = "/home/tyler/Documents/work/drugsandme/v2-test"
         var buildDir = paths.join(projectDir, "/build")
         var srcDir = paths.join(projectDir, "/src")
 
-        console.log(tempFile, tempFileName)
-
         // copy file from .tmp to src
         // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
         // fis.createReadStream(path.join(buildDir,editable.page)).pipe(fis.createWriteStream(path.join(program_files, ".tmp", editable.page)));
-        console.log("copying ",tempFile, " to ", srcDir,tempFileName)
+        console.log("copying ",tempFile, "to", srcDir)
         fis.createReadStream(tempFile).pipe(fis.createWriteStream(paths.join(srcDir,tempFileName)))
         // render template and save to buildir
         // http://samwize.com/2013/09/01/how-you-can-pass-a-variable-into-callback-function-in-node-dot-js/

@@ -5,7 +5,7 @@
 
 
     <!-- Stylesheets -->
-    <link rel="stylesheet" href="dist/css/photon.css">
+    <!-- <link rel="stylesheet" href="dist/css/photon.css"> -->
     <link rel="stylesheet" href="dist/css/main.css">
     <!-- Font Awesome for awesome icons. You can redefine icons used in a plugin configuration -->
     <link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
@@ -17,6 +17,12 @@
     <script>vex.defaultOptions.className = 'vex-theme-os'</script>
     <link rel="stylesheet" href="node_modules/vex-js/dist/css/vex.css" />
     <link rel="stylesheet" href="node_modules/vex-js/dist/css/vex-theme-os.css" /> -->
+
+    <!-- Xel  -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+    <script src="node_modules/xel/xel.min.js"></script>
+    <link rel="stylesheet" href="node_modules/xel/stylesheets/material.theme.css">
   </head>
 
 
@@ -38,27 +44,27 @@
        -->
 
         <div class="toolbar-actions">
-          <div class="btn-group">
+          <x-menubar class="btn-group">
             <!-- Pull function -->
             <!-- <button v-on:click="pull" class="btn btn-default">
               <span class="icon icon-arrows-ccw"></span>
             </button> -->
             <!-- TODO: This will make a new file from whichever file the
             template is  -->
-            <button title="new file" v-on:click="new_file" class="btn btn-default">
+            <x-menuitem title="new file" v-on:click="new_file" class="btn btn-default">
               <span class="icon icon-plus"></span>
-            </button>
-            <button title="save file" v-on:click="save_file" class="btn btn-default">
+            </x-menuitem>
+            <x-menuitem title="save file" v-on:click="save_file" class="btn btn-default">
               <span class="icon icon-floppy"></span>
-            </button>
-            <button title="export file" v-on:click="export_file" class="btn btn-default">
+            </x-menuitem>
+            <x-menuitem title="export file" v-on:click="export_file" class="btn btn-default">
               <span class="icon icon-export"></span>
-            </button>
+            </x-menuitem>
             <!-- TODO: Open settings -->
-            <button title="settings" class="btn btn-default">
+            <x-menuitem title="settings" class="btn btn-default">
               <span class="icon icon-cog"></span>
-            </button>
-          </div>
+            </x-menuitem>
+          </x-menubar>
 
           <!--
               I have given up on this feature as I can't find a user friendly
@@ -75,13 +81,13 @@
         <!-- TODO:
             LATER: Maybe implement more projects as tabs?
        -->
-        <sidebar class="pane-sm sidebar">
+        <div class="pane-sm sidebar">
           <nav id="pages" class="nav-group">
             <li v-for="page in pages" v-on:click="selectFile(page)" class="nav-group-item">
               {{ page.name }}
             </li>
           </nav>
-        </sidebar>
+        </div>
 
         <div id="editable" class="pane padded form-group" >
           <form>

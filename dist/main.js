@@ -8,22 +8,25 @@ const gulp = require('gulp')
 const path = require('path')
 const g_nunjucks = require('gulp-nunjucks')
 const electron  = require('electron').remote
+const dialog = electron.dialog
 const vex = require('vex-js')
 const $ = require('jquery')
 
 // TODO: If no local project, you will be welcomed and asked for a git repo url
 // This will be cloned.
-// TODO: (safety mechanism) If changes made, asked to save when changing files
+// TODO: universal knowledge of which page is currently being viewed
 
-vex.registerPlugin(require('vex-dialog'))
-vex.defaultOptions.className = 'vex-theme-os'
+// vex.registerPlugin(require('vex-dialog'))
+// vex.defaultOptions.className = 'vex-theme-os'
 
 
 // TODO: read from config file (config file also needs path to static folder)
-var projectDir = '/home/tyler/Documents/work/drugsandme/v2-test/'
-var pagesDir = projectDir + "src/"
-var buildDir = projectDir + "build/"
-var program_files = "/home/tyler/Downloads/kah/"
+var projectDir    = '/home/tyler/Documents/work/drugsandme/v2-test/'
+var pagesDir      = projectDir + "src/"
+var buildDir      = projectDir + "build/"
+var tempDir       = electron.app.getAppPath() +"/.tmp/"
+var currentDir    = electron.app.getAppPath() +"/.current/"
+
 // var branch = 'master'
 // const simpleGit = require('simple-git')(projectDir)
 
@@ -138,10 +141,11 @@ var editable = new Vue({
   },
   // applies edits done to text to the block variable (not to file)
     applyTextEdit: function (text, index) {
-      console.log('index: ' + index)
-      // if (editable.blocks[index] == false)
-      //   console.log('no changes!')
-      // else
+
+      // makes sure the function doesn't run if blocks not initialised
+      if(!editable.blocks[0])
+        return
+
       if (editable.blocks[index].content === text)
         console.log("no changes!");
       else{
@@ -150,7 +154,7 @@ var editable = new Vue({
         // So that it can also be saved with CmdOrCtrl+S
         var newContent = remakeFile(editable.blocks)
 
-        fs.writeFile( electron.app.getAppPath() +"/.tmp/" + editable.page, newContent, (err) => {
+        fs.writeFile( tempDir + editable.page, newContent, (err) => {
           if (err) {
               alert("An error ocurred updating the file" + err.message);
               console.log(err);
@@ -173,7 +177,7 @@ var editable = new Vue({
       });
 
       // render template and save to buildir
-      console.log("dest: " + buildDir+editable.page)
+      console.log("saving to: " + buildDir+editable.page)
       // http://samwize.com/2013/09/01/how-you-can-pass-a-variable-into-callback-function-in-node-dot-js/
       setTimeout( function (){
         preview.reloadPage()
@@ -182,21 +186,17 @@ var editable = new Vue({
       .pipe(g_nunjucks.compile())
   		.pipe(gulp.dest(buildDir))
 
-      // // delete previous tmp file
-      // fs.readdir('.tmp', (err, files) => {
-      //   for (file in files){
-      //     fs.unlink(path.join('.tmp', files[file]), (err) => {
-      //       if (err) throw err;
-      //       console.log('successfully deleted.');
-      //     });
-      //   }
-      // })
-      //
-      // // copy file to .tmp so it can be used by other .js files
-      // // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
-      // fs.createReadStream(path.join(buildDir,editable.page)).pipe(fs.createWriteStream(path.join(program_files, ".tmp", editable.page)));
-    }
+      // delete all tmp files
+      fs.readdir(tempDir, (err, files) => {
+        for (var file in files){
+          fs.unlink(path.join(tempDir, files[file]), (err) => {
+            if (err) throw err;
+            console.log('successfully deleted:' + files[file]);
+          });
+        }
+      })
 
+    }
   }
 })
 
@@ -217,7 +217,7 @@ var header = new Vue ({
         if (fileName === undefined)
           return
 
-         fis.readdir('.tmp', (err, files) => {
+         fs.readdir('.tmp', (err, files) => {
            for(file in files)
              fs.createReadStream(paths.join('.tmp', files[file])).pipe(fs.createWriteStream(fileName));
          })
@@ -288,10 +288,61 @@ var pagesInFolder = new Vue({
   },
   methods:{
     selectFile: function(page){
-      console.log("loading file: " + page.name)
-      preview.renderFile(page.name)
-      editable.editFile(page.name)
-      console.log("editable-block: " + editable.blocks)
+
+      console.log("copying file from tmp to current")
+      // copy file to .current, as it is currently being used
+      // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
+      fs.createReadStream(path.join(tempDir,editable.page)).pipe(fs.createWriteStream(path.join(currentDir, editable.page)));
+
+      function loadNextFile() {
+        // callback function which will load selected file. We need this to happen
+        // AFTER save (or discard changes)
+          console.log("loading file: " + page.name)
+          preview.renderFile(page.name)
+          editable.editFile(page.name)
+      }
+
+      // If there's a file in .tmp and it's not the current file, then asked to
+      // save, so that .tmp folder can be flushed
+      var tempFileName = fs.readdirSync(tempDir)[0]
+
+      // We first check if there's a tmp file at all
+      if (tempFileName != page.name && tempFileName){
+        console.log("Unsaved file in .tmp!");
+        // prompt whether user wants to save changes or discard
+        dialog.showMessageBox({type: "warning",
+          message:"You have not saved your progress. Would you like to discard all changes or save?",
+          buttons: ["Discard Changes", "Save"]}, function(buttonIndex){
+            if(buttonIndex==0){
+              // if discard changes -> delete changes (flush .tmp)
+              fs.readdir(tempDir, (err, files) => {
+                for (var file in files){
+                  fs.unlink(path.join(tempDir, files[file]), (err) => {
+                    if (err) throw err;
+                    console.log('successfully deleted:' + path.join(tempDir, files[file]));
+                  });
+                }
+              }, loadNextFile())
+            }
+
+          // if save ->  save changes made (save .tmp)
+            else
+              editable.saveChanges()
+              loadNextFile()
+          })
+        // else -> flush .tmp
+      }
+      else loadNextFile()
+
+      // flush current dir
+      fs.readdir(currentDir, (err, files) => {
+        for (var file in files){
+          fs.unlink(path.join(currentDir, files[file]), (err) => {
+            if (err) throw err;
+            console.log('successfully deleted:' + path.join(currentDir, files[file]));
+          });
+        }
+      })
     }
   }
 })
