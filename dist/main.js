@@ -14,10 +14,6 @@ const $ = require('jquery')
 
 // TODO: If no local project, you will be welcomed and asked for a git repo url
 // This will be cloned.
-// TODO: universal knowledge of which page is currently being viewed
-
-// vex.registerPlugin(require('vex-dialog'))
-// vex.defaultOptions.className = 'vex-theme-os'
 
 
 // TODO: read from config file (config file also needs path to static folder)
@@ -289,10 +285,10 @@ var pagesInFolder = new Vue({
   methods:{
     selectFile: function(page){
 
-      console.log("copying file from tmp to current")
+      console.log("copying file from",path.join(pagesDir,page.name), "to", path.join(currentDir, page.name))
       // copy file to .current, as it is currently being used
       // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
-      fs.createReadStream(path.join(tempDir,editable.page)).pipe(fs.createWriteStream(path.join(currentDir, editable.page)));
+      fs.createReadStream(path.join(pagesDir,page.name)).pipe(fs.createWriteStream(path.join(currentDir, page.name)));
 
       function loadNextFile() {
         // callback function which will load selected file. We need this to happen
@@ -337,9 +333,10 @@ var pagesInFolder = new Vue({
       // flush current dir
       fs.readdir(currentDir, (err, files) => {
         for (var file in files){
-          fs.unlink(path.join(currentDir, files[file]), (err) => {
-            if (err) throw err;
-            console.log('successfully deleted:' + path.join(currentDir, files[file]));
+          if (files[file] != page.name)
+            fs.unlink(path.join(currentDir, files[file]), (err) => {
+              if (err) throw err;
+              console.log('successfully deleted:' + path.join(currentDir, files[file]));
           });
         }
       })

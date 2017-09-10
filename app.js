@@ -51,13 +51,13 @@ let template = [{
           // create zip file
           var zip = new AdmZip()
           var projectDir = "/home/tyler/Documents/work/drugsandme/v2-test"
-          var buildDir = paths.join(projectDir, "/build")
-          var srcDir = paths.join(projectDir, "/src")
+          var buildDir = paths.join(projectDir, "build")
+          var srcDir = paths.join(projectDir, "src")
           // tempFile is the name of the file in .tmp
           var currentFile = fis.readdirSync(app.getAppPath() + "/.current")[0]
-          zip.addLocalFile(paths.join(buildDir, currentFile))
-          zip.addLocalFile(paths.join(srcDir, currentFile))
-          
+          zip.addLocalFile(paths.join(projectDir, "build", currentFile), "build")
+          zip.addLocalFile(paths.join(projectDir, "src", currentFile), "src")
+
           // Write zip file
           zip.writeZip(fileName)
 
