@@ -3,49 +3,19 @@ const fs = require("fs")
 const readline = require('readline')
 const editor = require('vue2-medium-editor/dist/vue-medium-editor')
 const Vue = require('vue/dist/vue.js')
-const nunjucks = require('nunjucks')
-const gulp = require('gulp')
 const path = require('path')
-const g_nunjucks = require('gulp-nunjucks')
-const electron  = require('electron').remote
-const dialog = electron.dialog
-const vex = require('vex-js')
-const $ = require('jquery')
+const Store = require('./store.js');
+const fileops = require('./fileops.js')
+// let mainWindow; //do this so that the window object doesn't get GC'd
+
+
 
 // TODO: If no local project, you will be welcomed and asked for a git repo url
 // This will be cloned.
 
 
-// TODO: read from config file (config file also needs path to static folder)
-var projectDir    = '/home/tyler/Documents/work/drugsandme/v2-test/'
-var pagesDir      = projectDir + "src/"
-var buildDir      = projectDir + "build/"
-var tempDir       = electron.app.getAppPath() +"/.tmp/"
-var currentDir    = electron.app.getAppPath() +"/.current/"
-
 // var branch = 'master'
 // const simpleGit = require('simple-git')(projectDir)
-
-
-var preview = new Vue ({
-  el: "#preview",
-  data: {
-    currentURL: "",
-    webview: ""
-  },
-  methods: {
-    renderFile: function(page) {
-      preview.currentURL = "file://"+buildDir+page
-      console.log("currentURL: " + preview.currentURL)
-      preview.webview = this.$el.childNodes[0]
-      preview.webview.loadURL(preview.currentURL)
-    },
-    reloadPage: () => {
-      console.log("reloading page: " + preview.currentURL)
-      preview.webview.loadURL(preview.currentURL)
-    }
-  }
-})
 
 // parses file by scanning for blocks and returning array with:
 // { title:blocktitle, content:blockcontent}
@@ -71,13 +41,13 @@ var parseFile = (file) =>{
       }
       // if the block hasn't finished yet, keep adding to it
       else{
-        text+= line
+        text += line
       }
     }
     else if(line.startsWith("{%")){
       var patt = /block (.*) %}/i
       var extpatt = /extends (.*) %}/i
-      // if the line matches the regex from patt, then titile will equal it, and
+      // if the line matches the regex from patt, then title will equal it, and
       // the if will be true
       if(title = patt.exec(line)){
         title = title[1]
@@ -92,25 +62,25 @@ var parseFile = (file) =>{
   return contentArray
 };
 
-// builds template back again from array
-var remakeFile = (blocks) =>{
-  var output = ""
-  output+= editable.parentTemplate+"\n"
-  var block = 0
-  for(block in blocks)
-    output+="{% block " + blocks[block].title + " %}\n" + blocks[block].content + "\n{% endblock %}\n"
-
-return output
-}
-
-
-
-function makeArray(blocks){
-  var array = {}
-  for(prop in blocks)
-    array[blocks[prop].title] = blocks[prop].content
-  return array
-}
+var preview = new Vue ({
+  el: "#preview",
+  data: {
+    currentURL: "",
+    webview: ""
+  },
+  methods: {
+    renderFile: function(page) {
+      preview.currentURL = "file://"+fileops.buildDir+page
+      console.log("currentURL: " + preview.currentURL)
+      preview.webview = this.$el.childNodes[0]
+      preview.webview.loadURL(preview.currentURL)
+    },
+    reloadPage: () => {
+      console.log("reloading page: " + preview.currentURL)
+      preview.webview.loadURL(preview.currentURL)
+    }
+  }
+})
 
 var editable = new Vue({
   el: "#editable",
@@ -129,12 +99,14 @@ var editable = new Vue({
   methods:{
     editFile: (page) => {
       editable.page = page
-      editable.filepath = pagesDir+page
+      editable.filepath = fileops.pagesDir+page
       console.log("editing: " + editable.filepath)
       editable.blocks = parseFile(editable.filepath)
+      console.log("blocks!:",editable.blocks)
       return;
 
   },
+
   // applies edits done to text to the block variable (not to file)
     applyTextEdit: function (text, index) {
 
@@ -145,25 +117,29 @@ var editable = new Vue({
       if (editable.blocks[index].content === text)
         console.log("no changes!");
       else{
+        console.log("editing text!!")
         editable.blocks[index].content = text
 
         // So that it can also be saved with CmdOrCtrl+S
-        var newContent = remakeFile(editable.blocks)
+        // console.log(fileops.remakeFile())
 
-        fs.writeFile( tempDir + editable.page, newContent, (err) => {
-          if (err) {
-              alert("An error ocurred updating the file" + err.message);
-              console.log(err);
-              return;
-          }
-        });
+        var newContent = fileops.remakeFile(editable.blocks, editable.parentTemplate)
+        console.log("papi",newContent);
+        // fs.writeFile( fileops.tempDir + editable.page, newContent, (err) => {
+        //   if (err) {
+        //       alert("An error ocurred updating the file" + err.message);
+        //       console.log(err);
+        //       return;
+        //   }
+        // });
       }
   },
 
+
   // Saves changes done to blocks, recompiles template on save, and reload
     saveChanges: () => {
-
-      var newContent = remakeFile(editable.blocks)
+      console.log("blocks", editable.blocks)
+      var newContent = fileops.remakeFile(editable.blocks, editable.parentTemplate)
       fs.writeFile(editable.filepath, newContent, (err) => {
         if (err) {
             alert("An error ocurred updating the file" + err.message);
@@ -173,19 +149,18 @@ var editable = new Vue({
       });
 
       // render template and save to buildir
-      console.log("saving to: " + buildDir+editable.page)
+      console.log("render", editable.filepath, fileops.buildDir)
+      fileops.buildFile(editable.filepath, fileops.buildDir)
+
       // http://samwize.com/2013/09/01/how-you-can-pass-a-variable-into-callback-function-in-node-dot-js/
       setTimeout( function (){
         preview.reloadPage()
       }, 100)
-      gulp.src(editable.filepath)
-      .pipe(g_nunjucks.compile())
-  		.pipe(gulp.dest(buildDir))
 
       // delete all tmp files
-      fs.readdir(tempDir, (err, files) => {
+      fs.readdir(fileops.tempDir, (err, files) => {
         for (var file in files){
-          fs.unlink(path.join(tempDir, files[file]), (err) => {
+          fs.unlink(path.join(fileops.tempDir, files[file]), (err) => {
             if (err) throw err;
             console.log('successfully deleted:' + files[file]);
           });
@@ -207,21 +182,8 @@ var header = new Vue ({
     // Exports file to wanted directory, so html file can then be sent on
     // to dev
     export_file: () => {
-      electron.dialog.showSaveDialog({ filters: [
-        { name: 'html', extensions: ['html'] }
-      ]}, (fileName) => {
-        if (fileName === undefined)
-          return
-
-         fs.readdir('.tmp', (err, files) => {
-           for(file in files)
-             fs.createReadStream(paths.join('.tmp', files[file])).pipe(fs.createWriteStream(fileName));
-         })
-       }
-     )}
-
-
-
+        fileops.exportCurrent()
+      }
     // pull dir from repo
     // pull: () => {
     //   simpleGit
@@ -274,8 +236,7 @@ var header = new Vue ({
 ////////////////////////////////////
 
 // TODO: read rejectedFiles from config file
-// TODO: Make it so they are regular expressions
-var rejectedFiles = ['partials']
+var rejectedFiles = ['partials', 'article', 'base', 'drug']
 
 var pagesInFolder = new Vue({
   el: "#pages",
@@ -285,10 +246,10 @@ var pagesInFolder = new Vue({
   methods:{
     selectFile: function(page){
 
-      console.log("copying file from",path.join(pagesDir,page.name), "to", path.join(currentDir, page.name))
+      console.log("copying file from",path.join(fileops.pagesDir,page.name), "to", path.join(fileops.currentDir, page.name))
       // copy file to .current, as it is currently being used
       // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
-      fs.createReadStream(path.join(pagesDir,page.name)).pipe(fs.createWriteStream(path.join(currentDir, page.name)));
+      fs.createReadStream(path.join(fileops.pagesDir,page.name)).pipe(fs.createWriteStream(path.join(fileops.currentDir, page.name)));
 
       function loadNextFile() {
         // callback function which will load selected file. We need this to happen
@@ -298,63 +259,34 @@ var pagesInFolder = new Vue({
           editable.editFile(page.name)
       }
 
+
       // If there's a file in .tmp and it's not the current file, then asked to
       // save, so that .tmp folder can be flushed
-      var tempFileName = fs.readdirSync(tempDir)[0]
-
-      // We first check if there's a tmp file at all
-      if (tempFileName != page.name && tempFileName){
-        console.log("Unsaved file in .tmp!");
-        // prompt whether user wants to save changes or discard
-        dialog.showMessageBox({type: "warning",
-          message:"You have not saved your progress. Would you like to discard all changes or save?",
-          buttons: ["Discard Changes", "Save"]}, function(buttonIndex){
-            if(buttonIndex==0){
-              // if discard changes -> delete changes (flush .tmp)
-              fs.readdir(tempDir, (err, files) => {
-                for (var file in files){
-                  fs.unlink(path.join(tempDir, files[file]), (err) => {
-                    if (err) throw err;
-                    console.log('successfully deleted:' + path.join(tempDir, files[file]));
-                  });
-                }
-              }, loadNextFile())
-            }
-
-          // if save ->  save changes made (save .tmp)
-            else
-              editable.saveChanges()
-              loadNextFile()
-          })
-        // else -> flush .tmp
+      if(fileops.checkTmpFolder(page.name)){
+        editable.saveChanges()
+        loadNextFile()
       }
-      else loadNextFile()
+      else {
+         loadNextFile()
+      }
 
-      // flush current dir
-      fs.readdir(currentDir, (err, files) => {
-        for (var file in files){
-          if (files[file] != page.name)
-            fs.unlink(path.join(currentDir, files[file]), (err) => {
-              if (err) throw err;
-              console.log('successfully deleted:' + path.join(currentDir, files[file]));
-          });
-        }
-      })
     }
   }
 })
 
-fs.readdir(pagesDir, function done(err, list){
+fs.readdir(fileops.pagesDir, function done(err, list){
   if(err){
     return console.log(err);
   }
   var onlyHTML = list.filter( (file) => file.match(/.html/) )
   for(var item in onlyHTML ){
-    if(!(rejectedFiles.includes(onlyHTML[item])))
+    // Make a regex expression of all regex expressions in rejectedFiles
+    // https://stackoverflow.com/questions/8207066/creating-array-of-regular-expressions-javascript
+    var re = new RegExp(rejectedFiles.join("|"), "i");
+    if(!(re.test(onlyHTML[item])))
       pagesInFolder.pages.push({name: onlyHTML[item]})
     }
 });
-
 
 
 

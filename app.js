@@ -1,11 +1,12 @@
 'use strict'
 const electron = require('electron')
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
-const fis = require('fs')
-const gulp = require('gulp')
-const paths = require('path')
-const g_nunjucks = require('gulp-nunjucks')
-const AdmZip = require('adm-zip');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron')
+const fs = require('fs')
+const path = require('path')
+const fileops = require('./fileops.js')
+const Store = require('./store.js');
+let mainWindow; //do this so that the window object doesn't get GC'd
+
 
 ////////////////////
 // Top Menu
@@ -38,35 +39,12 @@ let template = [{
     },
      {
       // used http://mylifeforthecode.com/getting-started-with-standard-dialogs-in-electron/
-      // This would ideally export a zip file with the source, and html file
+      // This exports a zip file with the source, and html file
       label: 'export',
       accelerator: 'CmdOrCtrl+E',
       click: () => {
-        dialog.showSaveDialog({ filters: [
-          { name: 'zip', extensions: ['zip'] }
-        ]}, (fileName) => {
-          if (fileName === undefined)
-            return
-
-          // create zip file
-          var zip = new AdmZip()
-          var projectDir = "/home/tyler/Documents/work/drugsandme/v2-test"
-          var buildDir = paths.join(projectDir, "build")
-          var srcDir = paths.join(projectDir, "src")
-          // tempFile is the name of the file in .tmp
-          var currentFile = fis.readdirSync(app.getAppPath() + "/.current")[0]
-          zip.addLocalFile(paths.join(projectDir, "build", currentFile), "build")
-          zip.addLocalFile(paths.join(projectDir, "src", currentFile), "src")
-
-          // Write zip file
-          zip.writeZip(fileName)
-
-          // fis.readdir('.tmp', (err, files) => {
-          //   for(var file in files)
-          //     fis.createReadStream(paths.join('.tmp', files[file])).pipe(fis.createWriteStream(fileName));
-          //  })
-         }
-      )}
+        fileops.exportCurrent()
+      }
     },
 
     // will Take the file in program directory and do the same as save in main.js
@@ -76,51 +54,9 @@ let template = [{
       accelerator:'CmdOrCtrl+S',
       click: () => {
         console.log("Saving...")
-        // tempFiles is the folder in which each change is saved
-        //(program files /tmp)
-        var tempDir = app.getAppPath() + "/.tmp"
-        // tempFile is the name of the file in .tmp
-        var tempFileName = fis.readdirSync(tempDir)[0]
-        // Avoids double save crash. It would crash if file was saved when there
-        // was no file in .tmp . Also fixes issue of lingering files in .tmp
-        if (!tempFileName){
-          console.log("No changes made!!");
-          return
-        }
-        var tempFile = paths.join(tempDir,tempFileName)
-        var projectDir = "/home/tyler/Documents/work/drugsandme/v2-test"
-        var buildDir = paths.join(projectDir, "/build")
-        var srcDir = paths.join(projectDir, "/src")
-
-        // copy file from .tmp to src
-        // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
-        // fis.createReadStream(path.join(buildDir,editable.page)).pipe(fis.createWriteStream(path.join(program_files, ".tmp", editable.page)));
-        console.log("copying ",tempFile, "to", srcDir)
-        fis.createReadStream(tempFile).pipe(fis.createWriteStream(paths.join(srcDir,tempFileName)))
-        // render template and save to buildir
-        // http://samwize.com/2013/09/01/how-you-can-pass-a-variable-into-callback-function-in-node-dot-js/
-        console.log("compiling: ", srcDir, tempFileName);
-        gulp.src(paths.join(srcDir,tempFileName))
-        .pipe(g_nunjucks.compile())
-        .pipe(gulp.dest("/home/tyler/Documents/work/drugsandme/v2-test/build"))
-
-        // delete all tmp files
-        fis.readdir(tempDir, (err, files) => {
-          for (var file in files){
-            fis.unlink(paths.join(tempDir, files[file]), (err) => {
-              if (err) throw err;
-              console.log('successfully deleted:' + files[file]);
-            });
-          }
-        })
-
-        // // copy file to .tmp so it can be used by other .js files
-        // // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
-        // fs.createReadStream(path.join(buildDir,editable.page)).pipe(fs.createWriteStream(path.join(program_files, ".tmp", editable.page)));
-        console.log("saved changes")
-      }
+        fileops.saveCurrentFile()
     }
-  ]
+  }]
 }, {
   label: 'View',
   submenu: [{
@@ -170,19 +106,6 @@ let template = [{
     }
   }, {
     type: 'separator'
-  }, {
-    label: 'App Menu Demo',
-    click: function (item, focusedWindow) {
-      if (focusedWindow) {
-        const options = {
-          type: 'info',
-          title: 'Application Menu Demo',
-          buttons: ['Ok'],
-          message: 'This demo is for the Menu section, showing how to create a clickable menu item in the application menu.'
-        }
-        electron.dialog.showMessageBox(focusedWindow, options, function () {})
-      }
-    }
   }]
 }, {
   label: 'Window',
@@ -328,9 +251,39 @@ app.on('window-all-closed', function () {
   if (reopenMenuItem) reopenMenuItem.enabled = true
 })
 
+// app.on('ready', function() {
+//     var mainWindow = new electron.BrowserWindow({width: 600, height: 800})
+//     mainWindow.loadURL('file://' + __dirname + '/index.html')
+// })
+
+// settings
+// First instantiate the class
+const store = new Store({
+  // We'll call our data file 'user-preferences'
+  configName: 'user-preferences',
+  defaults: {
+    // 800x600 is the default size of our window
+    windowBounds: { width: 800, height: 600 }
+  }
+});
+
+// When our app is ready, we'll create our BrowserWindow
 app.on('ready', function() {
-    const menu = Menu.buildFromTemplate(template)
-    Menu.setApplicationMenu(menu)
-    var mainWindow = new electron.BrowserWindow({width: 600, height: 800})
-    mainWindow.loadURL('file://' + __dirname + '/index.html')
-})
+  // First we'll get our height and width. This will be the defaults if there wasn't anything saved
+  let { width, height } = store.get('windowBounds');
+
+  // Pass those values in to the BrowserWindow options
+  mainWindow = new BrowserWindow({ width, height });
+
+  // The BrowserWindow class extends the node.js core EventEmitter class, so we use that API
+  // to listen to events on the BrowserWindow. The resize event is emitted when the window size changes.
+  mainWindow.on('resize', () => {
+    // The event doesn't pass us the window size, so we call the `getBounds` method which returns an object with
+    // the height, width, and x and y coordinates.
+    let { width, height } = mainWindow.getBounds();
+    // Now that we have them, save them using the `set` method.
+    store.set('windowBounds', { width, height });
+  });
+
+  mainWindow.loadURL('file://' + path.join(__dirname, 'index.html'));
+});
