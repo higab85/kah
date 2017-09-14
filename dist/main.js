@@ -6,9 +6,6 @@ const Vue = require('vue/dist/vue.js')
 const path = require('path')
 const Store = require('./store.js');
 const fileops = require('./fileops.js')
-// let mainWindow; //do this so that the window object doesn't get GC'd
-
-
 
 // TODO: If no local project, you will be welcomed and asked for a git repo url
 // This will be cloned.
@@ -158,15 +155,7 @@ var editable = new Vue({
       }, 100)
 
       // delete all tmp files
-      fs.readdir(fileops.tempDir, (err, files) => {
-        for (var file in files){
-          fs.unlink(path.join(fileops.tempDir, files[file]), (err) => {
-            if (err) throw err;
-            console.log('successfully deleted:' + files[file]);
-          });
-        }
-      })
-
+      fileops.flushTmp()
     }
   }
 })

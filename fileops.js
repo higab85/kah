@@ -6,6 +6,8 @@ const {app, dialog} = (require('electron').remote || require('electron'))
 const gulp = require('gulp')
 const g_nunjucks = require('gulp-nunjucks')
 const AdmZip = require('adm-zip')
+const fs = require('fs')
+const path = require('path')
 
 
 // TODO: read from config file (config file also needs path to static folder)
@@ -146,24 +148,50 @@ function checkTmpFolder(pageName){
     v=>false
 
   // flush current dir
-  fs.readdir(fileops.currentDir, (err, files) => {
+  flushFolder(currentDir, pageName)
+  // fs.readdir(fileops.currentDir, (err, files) => {
+  //   for (var file in files){
+  //     if (files[file] != pageName)
+  //       fs.unlink(path.join(fileops.currentDir, files[file]), (err) => {
+  //         if (err) throw err;
+  //         console.log('successfully deleted:' + path.join(fileops.currentDir, files[file]));
+  //     });
+  //   }
+  // })
+}
+
+// Deletes all files in a folder (meant for .tmp and .current)
+function flushFolder(folder, fileToAvoid){
+  fs.readdir(folder, (err, files) => {
     for (var file in files){
-      if (files[file] != page.name)
-        fs.unlink(path.join(fileops.currentDir, files[file]), (err) => {
-          if (err) throw err;
-          console.log('successfully deleted:' + path.join(fileops.currentDir, files[file]));
+      if (files[file] != fileToAvoid)
+      fs.unlink(path.join(folder, files[file]), (err) => {
+        if (err) throw err;
+        console.log('successfully deleted:' + files[file]);
       });
     }
   })
 }
 
+// flush tmp folder
+function flushTmp(){
+  flushFolder(tempDir, null)
+}
+function flushAll(){
+  flushFolder(tempDir, null)
+  flushFolder(currentDir, null)
+}
+
 module.exports = {
+  //functions
   saveCurrentFile,
   exportCurrent,
   remakeFile,
   makeArray,
   checkTmpFolder,
   buildFile,
+  flushTmp,
+  flushAll,
   // variables
   pagesDir,
   currentDir,

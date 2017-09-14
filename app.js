@@ -6,7 +6,7 @@ const path = require('path')
 const fileops = require('./fileops.js')
 const Store = require('./store.js');
 let mainWindow; //do this so that the window object doesn't get GC'd
-
+let willQuitApp = false;
 
 ////////////////////
 // Top Menu
@@ -285,5 +285,22 @@ app.on('ready', function() {
     store.set('windowBounds', { width, height });
   });
 
+  // https://discuss.atom.io/t/how-to-catch-the-event-of-clicking-the-app-windows-close-button-in-electron-app/21425/8
+  mainWindow.on('close', (e) => {
+    if (willQuitApp) {
+      /* the user tried to quit the app */
+      mainWindow = null;
+    } else {
+      /* the user only tried to close the window */
+      e.preventDefault();
+      mainWindow.hide();
+    }
+  });
+
   mainWindow.loadURL('file://' + path.join(__dirname, 'index.html'));
+});
+
+app.on('before-quit', () => {
+    fileops.flushAll()
+    willQuitApp = true
 });
