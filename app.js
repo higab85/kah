@@ -39,16 +39,13 @@ let template = [{
     }, {
       // used http://mylifeforthecode.com/getting-started-with-standard-dialogs-in-electron/
       // This exports a zip file with the source, and html file
-      label: 'export',
+      label: 'Export',
       accelerator: 'CmdOrCtrl+E',
       click: () => {
         fileops.exportCurrent()
       }
-    },
-
+    }, {
     // will Take the file in program directory and do the same as save in main.js
-    //
-     {
       label: 'Save',
       accelerator:'CmdOrCtrl+S',
       click: () => {
@@ -268,6 +265,9 @@ const store = new Store({
 
 // When our app is ready, we'll create our BrowserWindow
 app.on('ready', function() {
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
+
   // First we'll get our height and width. This will be the defaults if there wasn't anything saved
   let { width, height } = store.get('windowBounds');
 

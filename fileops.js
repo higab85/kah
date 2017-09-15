@@ -129,7 +129,6 @@ function remakeFile(blocks, template){
   var block = 0
   for(block in blocks){
     output+="{% block " + blocks[block].title + " %}\n" + blocks[block].content + "\n{% endblock %}\n"
-    console.log(output);
   }
 
   return output

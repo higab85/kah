@@ -99,7 +99,6 @@ var editable = new Vue({
       editable.filepath = fileops.srcDir+page
       console.log("editing: " + editable.filepath)
       editable.blocks = parseFile(editable.filepath)
-      console.log("blocks!:",editable.blocks)
       return;
 
   },
@@ -121,21 +120,19 @@ var editable = new Vue({
         // console.log(fileops.remakeFile())
 
         var newContent = fileops.remakeFile(editable.blocks, editable.parentTemplate)
-        console.log("papi",newContent);
-        // fs.writeFile( fileops.tempDir + editable.page, newContent, (err) => {
-        //   if (err) {
-        //       alert("An error ocurred updating the file" + err.message);
-        //       console.log(err);
-        //       return;
-        //   }
-        // });
+        fs.writeFile( path.join(fileops.tempDir, editable.page), newContent, (err) => {
+          if (err) {
+              alert("An error ocurred updating the file" + err.message);
+              console.log(err);
+              return;
+          }
+        });
       }
   },
 
 
   // Saves changes done to blocks, recompiles template on save, and reload
     saveChanges: () => {
-      console.log("blocks", editable.blocks)
       var newContent = fileops.remakeFile(editable.blocks, editable.parentTemplate)
       fs.writeFile(editable.filepath, newContent, (err) => {
         if (err) {
