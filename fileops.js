@@ -8,15 +8,48 @@ const g_nunjucks = require('gulp-nunjucks')
 const AdmZip = require('adm-zip')
 const fs = require('fs')
 const path = require('path')
+const Store = require('./store.js')
 
+const store = new Store({
+  // We'll call our data file 'user-preferences'
+  configName: 'user-preferences',
+  defaults: {
+    // 800x600 is the default size of our window
+    windowBounds: { width: 800, height: 600 }
+  }
+});
 
-// TODO: read from config file (config file also needs path to static folder)
-var projectDir    = '/home/tyler/Documents/work/drugsandme/v2-test/'
-var pagesDir      = projectDir + "src/"
-var buildDir      = projectDir + "build/"
-var tempDir       = app.getAppPath() + "/.tmp/"
-var currentDir    = app.getAppPath() + "/.current/"
+// TODO: if a config or project is dragged onto the app, it will be taken care of
+var projectDir    = getData("projectDir")
+var srcDir        = path.join(getData("projectDir"), getData("source-path"))
+var buildDir      = path.join(getData("projectDir"), getData("build-path"))
+var tempDir       = path.join(app.getPath("userData"),"tmp")
+var currentDir    = path.join(app.getPath("userData"), "current")
 
+function getData(data){
+  try {
+    return store.get(data)
+  } catch (e) {
+    // if no projectDir found, we'll let the user specify where the project
+    // folder is.
+    if(data === "projectDir"){
+      dialog.showMessageBox({type: "warning",
+        message:"Please let us know where your project is saved",
+        buttons: ["OK"]}, function(){
+          dialog.showOpenDialog({ properties: "openDirectory"}, (folderName) => {
+            // if no folder specified, app quits
+            if (folderName === undefined)
+              dialog.showMessageBox({type: "error",
+                message:"No directory specified. To specify folder, please restart this application.", buttons:"OK"})
+            else {
+              store.set("projectDir", folderName)
+            }
+        })
+      })
+    }
+    console.log(e)
+  }
+}
 
 // builds source to destination
 // http://samwize.com/2013/09/01/how-you-can-pass-a-variable-into-callback-function-in-node-dot-js/
@@ -39,9 +72,6 @@ function saveCurrentFile() {
     return
   }
   var tempFile = path.join(tempDir,tempFileName)
-  var projectDir = "/home/tyler/Documents/work/drugsandme/v2-test"
-  var buildDir = path.join(projectDir, "/build")
-  var srcDir = path.join(projectDir, "/src")
 
   console.log("buildsource:",path.join(srcDir,tempFileName));
   // copy file from .tmp to src
@@ -49,7 +79,7 @@ function saveCurrentFile() {
   // fs.createReadStream(path.join(buildDir,editable.page)).pipe(fs.createWriteStream(path.join(program_files, ".tmp", editable.page)));
   fs.createReadStream(tempFile).pipe(fs.createWriteStream(path.join(srcDir,tempFileName)))
 
-  buildFile(path.join(srcDir,tempFileName), "/home/tyler/Documents/work/drugsandme/v2-test/build")
+  buildFile(path.join(srcDir,tempFileName), buildDir)
 
   // delete all tmp files
   fs.readdir(tempDir, (err, files) => {
@@ -76,9 +106,6 @@ function exportCurrent() {
 
     // create zip file
     var zip = new AdmZip()
-    var projectDir = "/home/tyler/Documents/work/drugsandme/v2-test"
-    var buildDir = path.join(projectDir, "build")
-    var srcDir = path.join(projectDir, "src")
     // tempFile is the name of the file in .tmp
     var currentFile = fs.readdirSync(app.getAppPath() + "/.current")[0]
     zip.addLocalFile(path.join(projectDir, "build", currentFile), "build")
@@ -193,7 +220,7 @@ module.exports = {
   flushTmp,
   flushAll,
   // variables
-  pagesDir,
+  srcDir,
   currentDir,
   tempDir,
   buildDir

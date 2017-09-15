@@ -36,8 +36,7 @@ let template = [{
       label: 'Paste',
       accelerator: 'CmdOrCtrl+V',
       role: 'paste'
-    },
-     {
+    }, {
       // used http://mylifeforthecode.com/getting-started-with-standard-dialogs-in-electron/
       // This exports a zip file with the source, and html file
       label: 'export',

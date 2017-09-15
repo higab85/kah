@@ -96,7 +96,7 @@ var editable = new Vue({
   methods:{
     editFile: (page) => {
       editable.page = page
-      editable.filepath = fileops.pagesDir+page
+      editable.filepath = fileops.srcDir+page
       console.log("editing: " + editable.filepath)
       editable.blocks = parseFile(editable.filepath)
       console.log("blocks!:",editable.blocks)
@@ -235,10 +235,10 @@ var pagesInFolder = new Vue({
   methods:{
     selectFile: function(page){
 
-      console.log("copying file from",path.join(fileops.pagesDir,page.name), "to", path.join(fileops.currentDir, page.name))
+      console.log("copying file from",path.join(fileops.srcDir,page.name), "to", path.join(fileops.currentDir, page.name))
       // copy file to .current, as it is currently being used
       // https://stackoverflow.com/questions/11293857/fastest-way-to-copy-file-in-node-js
-      fs.createReadStream(path.join(fileops.pagesDir,page.name)).pipe(fs.createWriteStream(path.join(fileops.currentDir, page.name)));
+      fs.createReadStream(path.join(fileops.srcDir,page.name)).pipe(fs.createWriteStream(path.join(fileops.currentDir, page.name)));
 
       function loadNextFile() {
         // callback function which will load selected file. We need this to happen
@@ -263,7 +263,7 @@ var pagesInFolder = new Vue({
   }
 })
 
-fs.readdir(fileops.pagesDir, function done(err, list){
+fs.readdir(fileops.srcDir, function done(err, list){
   if(err){
     return console.log(err);
   }
